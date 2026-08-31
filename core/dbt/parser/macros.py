@@ -53,16 +53,27 @@ class MacroParser(BaseParser[Macro]):
             self._handle_extract_warning(warning=warning, file=base_node.original_file_path)
 
         try:
-            blocks: List[jinja.BlockTag] = [
-                t
-                for t in jinja.extract_toplevel_blocks(
-                    base_node.raw_code,
-                    allowed_blocks={"macro", "materialization", "test", "data_test"},
-                    collect_raw_data=False,
-                    warning_callback=wrap_handle_extract_warning,
-                )
-                if isinstance(t, jinja.BlockTag)
-            ]
+            try:
+                blocks: List[jinja.BlockTag] = [
+                    t
+                    for t in jinja.extract_toplevel_blocks(
+                        base_node.raw_code,
+                        allowed_blocks={"macro", "materialization", "test", "data_test"},
+                        collect_raw_data=False,
+                        warning_callback=wrap_handle_extract_warning,
+                    )
+                    if isinstance(t, jinja.BlockTag)
+                ]
+            except TypeError:
+                blocks = [
+                    t
+                    for t in jinja.extract_toplevel_blocks(
+                        base_node.raw_code,
+                        allowed_blocks={"macro", "materialization", "test", "data_test"},
+                        collect_raw_data=False,
+                    )
+                    if isinstance(t, jinja.BlockTag)
+                ]
         except ParsingError as exc:
             exc.add_node(base_node)
             raise

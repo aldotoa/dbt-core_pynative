@@ -7,9 +7,17 @@ from metricflow_semantic_interfaces.type_enums import (
     DimensionType,
     EntityType,
     MetricType,
-    PeriodAggregation,
     TimeGranularity,
 )
+
+try:
+    from metricflow_semantic_interfaces.type_enums import PeriodAggregation
+except (ImportError, AttributeError):
+    from enum import Enum
+
+    class PeriodAggregation(str, Enum):  # type: ignore[no-redef]
+        FIRST = "first"
+        LAST = "last"
 
 from dbt.artifacts.resources import (
     ColumnDimension,

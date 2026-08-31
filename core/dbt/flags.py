@@ -71,6 +71,7 @@ def get_flag_dict():
         "empty",
         "maximum_seed_size_mib",
         "hints_enabled",
+        "parser_concurrency",
     }
     return {key: getattr(GLOBAL_FLAGS, key.upper(), None) for key in flag_attr}
 

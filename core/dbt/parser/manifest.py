@@ -121,6 +121,7 @@ from dbt.mp_context import get_mp_context
 from dbt.node_types import AccessType, NodeType
 from dbt.parser.analysis import AnalysisParser
 from dbt.parser.base import Parser
+from dbt.parser.concurrency import parallel_map
 from dbt.parser.docs import DocumentationParser
 from dbt.parser.fixtures import FixtureParser
 from dbt.parser.functions import FunctionParser
@@ -842,6 +843,9 @@ class ManifestLoader:
                 dbt.deprecations.warn("microbatch-macro-outside-of-batches-deprecation")
 
     def load_and_parse_macros(self, project_parser_files):
+        macro_tasks = []
+        generic_test_tasks = []
+
         for project in self.all_projects.values():
             if project.project_name not in project_parser_files:
                 continue
@@ -849,19 +853,29 @@ class ManifestLoader:
             if "MacroParser" in parser_files:
                 parser = MacroParser(project, self.manifest)
                 for file_id in parser_files["MacroParser"]:
-                    block = FileBlock(self.manifest.files[file_id])
-                    parser.parse_file(block)
-                    # increment parsed path count for performance tracking
-                    self._perf_info.parsed_path_count += 1
-            # generic tests hisotrically lived in the macros directoy but can now be nested
-            # in a /generic directory under /tests so we want to process them here as well
+                    macro_tasks.append((parser, file_id))
             if "GenericTestParser" in parser_files:
                 parser = GenericTestParser(project, self.manifest)
                 for file_id in parser_files["GenericTestParser"]:
-                    block = FileBlock(self.manifest.files[file_id])
-                    parser.parse_file(block)
-                    # increment parsed path count for performance tracking
-                    self._perf_info.parsed_path_count += 1
+                    generic_test_tasks.append((parser, file_id))
+
+        def _parse_macro_block(t):
+            parser, file_id = t
+            block = FileBlock(self.manifest.files[file_id])
+            parser.parse_file(block)
+            return file_id
+
+        macro_results = parallel_map(_parse_macro_block, macro_tasks)
+        self._perf_info.parsed_path_count += len(macro_results)
+
+        def _parse_generic_test_block(t):
+            parser, file_id = t
+            block = FileBlock(self.manifest.files[file_id])
+            parser.parse_file(block)
+            return file_id
+
+        generic_test_results = parallel_map(_parse_generic_test_block, generic_test_tasks)
+        self._perf_info.parsed_path_count += len(generic_test_results)
 
         self.build_macro_resolver()
         # Look at changed macros and update the macro.depends_on.macros
@@ -893,21 +907,29 @@ class ManifestLoader:
 
             # Parse the project files for this parser
             parser: Parser = parser_cls(project, self.manifest, self.root_project)
-            for file_id in parser_files[parser_name]:
-                block = FileBlock(self.manifest.files[file_id])
-                if isinstance(parser, SchemaParser):
+            file_ids = parser_files[parser_name]
+
+            if parser_cls is SchemaParser:
+                def _parse_schema_file(file_id):
+                    block = FileBlock(self.manifest.files[file_id])
                     assert isinstance(block.file, SchemaSourceFile)
                     if self.partially_parsing:
                         dct = block.file.pp_dict
                     else:
                         dct = block.file.dict_from_yaml
-                    # this is where the schema file gets parsed
                     parser.parse_file(block, dct=dct)
-                    # Came out of here with UnpatchedSourceDefinition containing configs at the source level
-                    # and not configs at the table level (as expected)
-                else:
+                    return file_id
+
+                results = parallel_map(_parse_schema_file, file_ids)
+                project_parsed_path_count = len(results)
+            else:
+                def _parse_project_file(file_id):
+                    block = FileBlock(self.manifest.files[file_id])
                     parser.parse_file(block)
-                project_parsed_path_count += 1
+                    return file_id
+
+                results = parallel_map(_parse_project_file, file_ids)
+                project_parsed_path_count = len(results)
 
             # Save timing info
             project_loader_info.parsers.append(
@@ -2531,16 +2553,24 @@ def resolve_macro_depends_on(
     macro_resolver: MacroResolver,
     macros: Iterable[Macro],
 ) -> None:
+    macro_list = list(macros)
+    if not macro_list:
+        return
     macro_ctx = generate_macro_context(root_project)
     macro_namespace = TestMacroNamespace(macro_resolver, {}, None, MacroStack(), [])
     adapter = get_adapter(root_project)
     db_wrapper = ParseProvider().DatabaseWrapper(
         adapter, macro_namespace  # type: ignore[arg-type]
     )
-    for macro in macros:
-        possible_macro_calls = statically_extract_macro_calls(
+
+    def _extract_macro(macro: Macro):
+        possible_calls = statically_extract_macro_calls(
             macro.macro_sql, macro_ctx, db_wrapper
         )
+        return (macro, possible_calls)
+
+    results = parallel_map(_extract_macro, macro_list)
+    for macro, possible_macro_calls in results:
         for macro_name in possible_macro_calls:
             # adapter.dispatch calls can generate a call with the same name as the macro
             # it ought to be an adapter prefix (postgres_) or default_

@@ -1,11 +1,33 @@
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
-from metricflow_semantic_interfaces.call_parameter_sets import JinjaCallParameterSets
-from metricflow_semantic_interfaces.parsing.where_filter.jinja_object_parser import (
-    JinjaObjectParser,
-    QueryItemLocation,
-)
+try:
+    from metricflow_semantic_interfaces.call_parameter_sets import JinjaCallParameterSets
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.call_parameter_sets import (  # type: ignore[no-redef]
+            FilterCallParameterSets as JinjaCallParameterSets,
+        )
+    except (ImportError, AttributeError):
+
+        class JinjaCallParameterSets:  # type: ignore[no-redef]
+            pass
+
+try:
+    from metricflow_semantic_interfaces.parsing.where_filter.jinja_object_parser import (
+        JinjaObjectParser,
+        QueryItemLocation,
+    )
+except (ImportError, AttributeError):
+
+    class QueryItemLocation:  # type: ignore[no-redef]
+        NON_ORDER_BY = "NON_ORDER_BY"
+
+    class JinjaObjectParser:  # type: ignore[no-redef]
+        @classmethod
+        def parse_call_parameter_sets(cls, *args, **kwargs):
+            return None
+
 from metricflow_semantic_interfaces.type_enums import AggregationType
 
 from dbt_common.dataclass_schema import dbtClassMixin

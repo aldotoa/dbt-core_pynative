@@ -1,0 +1,6 @@
+kind: Features
+body: Parallelize file reading, checksum hashing, AST parsing, and macro resolution using concurrent worker pools and orjson for fast initial parse performance
+time: 2026-08-31T20:25:00.000000+03:00
+custom:
+    Author: dbt-core
+    Issue: ""

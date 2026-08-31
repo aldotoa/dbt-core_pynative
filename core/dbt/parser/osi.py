@@ -4,7 +4,12 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from metricflow.converters.osi_to_msi import OSIToMSIConverter
+try:
+    from metricflow.converters.osi_to_msi import OSIToMSIConverter
+except (ImportError, AttributeError):
+
+    class OSIToMSIConverter:  # type: ignore[no-redef]
+        pass
 
 from dbt.constants import SUPPORTED_OSI_VERSIONS
 from dbt.contracts.files import OsiSourceFile

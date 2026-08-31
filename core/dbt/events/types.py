@@ -17,7 +17,13 @@ from dbt_common.events.format import (
     pluralize,
     timestamp_to_datetime_string,
 )
-from dbt_common.ui import deprecation_tag as deprecation_tag_less_strict
+try:
+    from dbt_common.ui import deprecation_tag as deprecation_tag_less_strict
+except (ImportError, AttributeError):
+
+    def deprecation_tag_less_strict(msg: str, event_name: str = "") -> str:
+        return f"[Deprecated: {event_name}] {msg}" if event_name else f"[Deprecated] {msg}"
+
 from dbt_common.ui import error_tag, green, line_wrap_message, red, warning_tag, yellow
 
 

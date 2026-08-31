@@ -2,8 +2,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from dbt.adapters.catalogs import CatalogIntegrationConfig
 from dbt_common.dataclass_schema import dbtClassMixin
+
+try:
+    from dbt.adapters.catalogs import CatalogIntegrationConfig
+except (ImportError, AttributeError):
+
+    @dataclass
+    class CatalogIntegrationConfig(dbtClassMixin):  # type: ignore[no-redef]
+        pass
 
 
 @dataclass

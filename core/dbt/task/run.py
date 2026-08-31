@@ -26,7 +26,14 @@ from opentelemetry.trace import StatusCode
 from dbt import tracking, utils
 from dbt.adapters.base import BaseAdapter, BaseRelation
 from dbt.adapters.capability import Capability
-from dbt.adapters.catalogs import DbtCatalogIntegrationNotFoundError
+
+try:
+    from dbt.adapters.catalogs import DbtCatalogIntegrationNotFoundError
+except (ImportError, AttributeError):
+
+    class DbtCatalogIntegrationNotFoundError(Exception):  # type: ignore[no-redef]
+        pass
+
 from dbt.adapters.events.types import FinishedRunningStats
 from dbt.adapters.exceptions import MissingMaterializationError
 from dbt.artifacts.resources import Catalog, Hook

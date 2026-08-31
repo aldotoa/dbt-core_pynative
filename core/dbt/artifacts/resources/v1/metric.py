@@ -2,14 +2,23 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
+from enum import Enum
+
 from metricflow_semantic_interfaces.references import MeasureReference, MetricReference
 from metricflow_semantic_interfaces.type_enums import (
     AggregationType,
     ConversionCalculationType,
     MetricType,
-    PeriodAggregation,
     TimeGranularity,
 )
+
+try:
+    from metricflow_semantic_interfaces.type_enums import PeriodAggregation
+except (ImportError, AttributeError):
+
+    class PeriodAggregation(str, Enum):  # type: ignore[no-redef]
+        FIRST = "first"
+        LAST = "last"
 
 from dbt.artifacts.resources.base import GraphResource
 from dbt.artifacts.resources.types import NodeType

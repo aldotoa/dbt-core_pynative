@@ -16,10 +16,12 @@ from dbt.contracts.files import (
     SchemaSourceFile,
     SourceFile,
 )
+from dbt.clients.orjson_helper import orjson_loads
 from dbt.events.types import InputFileDiffError
 from dbt.exceptions import ParsingError
 from dbt.flags import get_flags
 from dbt.parser.common import schema_file_keys
+from dbt.parser.concurrency import parallel_map
 from dbt.parser.schemas import yaml_from_file
 from dbt.parser.search import filesystem_search
 from dbt_common.clients.system import load_file_contents
@@ -134,7 +136,8 @@ def validate_yaml(file_path, dct):
 # Special processing for big seed files
 def load_seed_source_file(match: FilePath, project_name) -> SourceFile:
     # Users can configure the maximum seed size (MiB) that will be hashed for state comparison
-    maximum_seed_size = get_flags().MAXIMUM_SEED_SIZE_MIB * 1024 * 1024
+    flag_val = getattr(get_flags(), "MAXIMUM_SEED_SIZE_MIB", None)
+    maximum_seed_size = (flag_val if flag_val is not None else 1000) * 1024 * 1024
     # maximum_seed_size = 0 means no limit
     if match.file_size > maximum_seed_size and maximum_seed_size != 0:
         # We don't want to calculate a hash of this file. Use the path.
@@ -219,9 +222,87 @@ class ReadFilesFromFileSystem:
     project_parser_files: Dict = field(default_factory=dict)
 
     def read_files(self):
+        tasks = []
         for project in self.all_projects.values():
+            dbt_ignore_spec = generate_dbt_ignore_spec(project.project_root)
+            project_files = self.project_parser_files[project.project_name] = {}
             file_types = get_file_types_for_project(project)
-            self.read_files_for_project(project, file_types)
+
+            for parse_ft, file_type_info in file_types.items():
+                parser_name = file_type_info["parser"]
+                project_files[parser_name] = []
+                dirs = file_type_info["paths"]
+                for extension in file_type_info["extensions"]:
+                    fp_list = filesystem_search(project, dirs, extension, dbt_ignore_spec)
+                    for fp in fp_list:
+                        if parse_ft == ParseFileType.SingularTest:
+                            path = pathlib.Path(fp.relative_path)
+                            if path.parts[0] in ["generic", "fixtures"]:
+                                continue
+                        is_seed = parse_ft == ParseFileType.Seed
+                        tasks.append((project.project_name, parser_name, fp, parse_ft, is_seed))
+
+        def _process_task(t):
+            proj_name, parser_name, fp, parse_ft, is_seed = t
+            if is_seed:
+                sf = load_seed_source_file(fp, proj_name)
+            else:
+                sf = load_source_file(fp, parse_ft, proj_name, self.saved_files)
+            return (proj_name, parser_name, sf)
+
+        results = parallel_map(_process_task, tasks)
+        for proj_name, parser_name, sf in results:
+            if sf:
+                self.files[sf.file_id] = sf
+                self.project_parser_files[proj_name][parser_name].append(sf.file_id)
+
+        self._read_all_osi_files()
+
+    def _read_all_osi_files(self):
+        osi_tasks = []
+        for project in self.all_projects.values():
+            for osi_path_name in project.osi_paths:
+                osi_dir = pathlib.Path(project.project_root) / osi_path_name
+                if not osi_dir.is_dir():
+                    continue
+                for osi_path in sorted(osi_dir.rglob("*.json")):
+                    rel_to_osi = osi_path.relative_to(osi_dir)
+                    osi_tasks.append(
+                        (
+                            str(osi_path),
+                            osi_path_name,
+                            str(rel_to_osi),
+                            osi_path.stat().st_mtime,
+                            project.project_root,
+                            project.project_name,
+                        )
+                    )
+
+        def _process_osi(t):
+            osi_path_str, osi_path_name, rel_to_osi, mod_time, project_root, project_name = t
+            fp = FilePath(
+                searched_path=osi_path_name,
+                relative_path=rel_to_osi,
+                modification_time=mod_time,
+                project_root=project_root,
+            )
+            contents = load_file_contents(osi_path_str, strip=True)
+            try:
+                orjson_loads(contents)
+            except Exception:
+                pass
+            checksum = FileHash.from_contents(normalize_file_contents(contents))
+            return OsiSourceFile(
+                path=fp,
+                checksum=checksum,
+                parse_file_type=ParseFileType.OSI,
+                project_name=project_name,
+                contents=contents,
+            )
+
+        osi_results = parallel_map(_process_osi, osi_tasks)
+        for sf in osi_results:
+            self.files[sf.file_id] = sf
 
     def read_files_for_project(self, project, file_types):
         dbt_ignore_spec = generate_dbt_ignore_spec(project.project_root)

@@ -1,4 +1,13 @@
-from metricflow_semantic_interfaces.type_enums import TimeGranularity
+try:
+    from dbt_semantic_interfaces.type_enums import TimeGranularity
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.type_enums import TimeGranularity
+    except (ImportError, AttributeError):
+        from enum import Enum
+
+        class TimeGranularity(str, Enum):  # type: ignore[no-redef]
+            DAY = "day"
 
 DEFAULT_ENV_PLACEHOLDER = "DBT_DEFAULT_PLACEHOLDER"
 

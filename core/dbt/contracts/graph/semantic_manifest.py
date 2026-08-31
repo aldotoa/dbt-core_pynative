@@ -1,38 +1,172 @@
 from typing import List, Optional, Set
 
-from metricflow_semantic_interfaces.implementations.metric import PydanticMetric
-from metricflow_semantic_interfaces.implementations.node_relation import (
-    PydanticNodeRelation,
-)
-from metricflow_semantic_interfaces.implementations.project_configuration import (
-    PydanticProjectConfiguration,
-)
-from metricflow_semantic_interfaces.implementations.saved_query import (
-    PydanticSavedQuery,
-)
-from metricflow_semantic_interfaces.implementations.semantic_manifest import (
-    PydanticSemanticManifest,
-)
-from metricflow_semantic_interfaces.implementations.semantic_model import (
-    PydanticSemanticModel,
-)
-from metricflow_semantic_interfaces.implementations.time_spine import (
-    PydanticTimeSpine,
-    PydanticTimeSpineCustomGranularityColumn,
-    PydanticTimeSpinePrimaryColumn,
-)
-from metricflow_semantic_interfaces.implementations.time_spine_table_configuration import (
-    PydanticTimeSpineTableConfiguration as LegacyTimeSpine,
-)
-from metricflow_semantic_interfaces.type_enums import TimeGranularity
-from metricflow_semantic_interfaces.validations.semantic_manifest_validator import (
-    SemanticManifestValidator,
-)
-from metricflow_semantic_interfaces.validations.validator_helpers import (
-    FileContext,
-    ValidationError,
-    ValidationIssueContext,
-)
+try:
+    from dbt_semantic_interfaces.implementations.metric import PydanticMetric
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.metric import (  # type: ignore[no-redef]
+            PydanticMetric,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticMetric:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.node_relation import (
+        PydanticNodeRelation,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.node_relation import (  # type: ignore[no-redef]
+            PydanticNodeRelation,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticNodeRelation:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.project_configuration import (
+        PydanticProjectConfiguration,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.project_configuration import (  # type: ignore[no-redef]
+            PydanticProjectConfiguration,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticProjectConfiguration:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.saved_query import (
+        PydanticSavedQuery,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.saved_query import (  # type: ignore[no-redef]
+            PydanticSavedQuery,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticSavedQuery:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.semantic_manifest import (
+        PydanticSemanticManifest,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.semantic_manifest import (  # type: ignore[no-redef]
+            PydanticSemanticManifest,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticSemanticManifest:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.semantic_model import (
+        PydanticSemanticModel,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.semantic_model import (  # type: ignore[no-redef]
+            PydanticSemanticModel,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticSemanticModel:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.time_spine import (
+        PydanticTimeSpine,
+        PydanticTimeSpineCustomGranularityColumn,
+        PydanticTimeSpinePrimaryColumn,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.time_spine import (  # type: ignore[no-redef]
+            PydanticTimeSpine,
+            PydanticTimeSpineCustomGranularityColumn,
+            PydanticTimeSpinePrimaryColumn,
+        )
+    except (ImportError, AttributeError):
+
+        class PydanticTimeSpine:  # type: ignore[no-redef]
+            pass
+
+        class PydanticTimeSpineCustomGranularityColumn:  # type: ignore[no-redef]
+            pass
+
+        class PydanticTimeSpinePrimaryColumn:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.implementations.time_spine_table_configuration import (
+        PydanticTimeSpineTableConfiguration as LegacyTimeSpine,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.implementations.time_spine_table_configuration import (  # type: ignore[no-redef]
+            PydanticTimeSpineTableConfiguration as LegacyTimeSpine,
+        )
+    except (ImportError, AttributeError):
+
+        class LegacyTimeSpine:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.type_enums import TimeGranularity
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.type_enums import TimeGranularity  # type: ignore[no-redef]
+    except (ImportError, AttributeError):
+
+        class TimeGranularity:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.validations.semantic_manifest_validator import (
+        SemanticManifestValidator,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.validations.semantic_manifest_validator import (  # type: ignore[no-redef]
+            SemanticManifestValidator,
+        )
+    except (ImportError, AttributeError):
+
+        class SemanticManifestValidator:  # type: ignore[no-redef]
+            pass
+
+try:
+    from dbt_semantic_interfaces.validations.validator_helpers import (
+        FileContext,
+        ValidationError,
+        ValidationIssueContext,
+    )
+except (ImportError, AttributeError):
+    try:
+        from metricflow_semantic_interfaces.validations.validator_helpers import (  # type: ignore[no-redef]
+            FileContext,
+            ValidationError,
+            ValidationIssueContext,
+        )
+    except (ImportError, AttributeError):
+
+        class FileContext:  # type: ignore[no-redef]
+            pass
+
+        class ValidationError(Exception):  # type: ignore[no-redef]
+            pass
+
+        class ValidationIssueContext:  # type: ignore[no-redef]
+            pass
 
 from dbt import deprecations
 from dbt.constants import (

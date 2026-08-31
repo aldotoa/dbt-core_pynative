@@ -522,6 +522,14 @@ partial_parse_file_path = _create_option_and_track_env_var(
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 
+parser_concurrency = _create_option_and_track_env_var(
+    "--parser-concurrency",
+    envvar="DBT_PARSER_CONCURRENCY",
+    help="Specify number of concurrent workers for file reading and AST parsing. Defaults to available CPU cores.",
+    default=None,
+    type=click.INT,
+)
+
 print = _create_option_and_track_env_var(
     "--print/--no-print",
     envvar="DBT_PRINT",

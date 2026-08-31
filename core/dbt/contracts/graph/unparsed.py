@@ -8,8 +8,16 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 from metricflow_semantic_interfaces.type_enums import (
     ConversionCalculationType,
     DimensionType,
-    PeriodAggregation,
 )
+
+try:
+    from metricflow_semantic_interfaces.type_enums import PeriodAggregation
+except (ImportError, AttributeError):
+
+    class PeriodAggregation(str, Enum):  # type: ignore[no-redef]
+        FIRST = "first"
+        LAST = "last"
+
 from typing_extensions import override
 
 # trigger the PathEncoder
