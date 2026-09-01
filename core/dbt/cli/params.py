@@ -524,7 +524,7 @@ partial_parse_file_path = _create_option_and_track_env_var(
 
 parser_concurrency = _create_option_and_track_env_var(
     "--parser-concurrency",
-    envvar="DBT_PARSER_CONCURRENCY",
+    envvar="DBT_ENGINE_PARSER_CONCURRENCY",
     help="Specify number of concurrent workers for file reading and AST parsing. Defaults to available CPU cores.",
     default=None,
     type=click.INT,

@@ -39,7 +39,7 @@ class TestParserConcurrency(unittest.TestCase):
         self.assertLessEqual(concurrency, 32)
 
     def test_get_parser_concurrency_env_var(self):
-        with mock.patch.dict(os.environ, {"DBT_PARSER_CONCURRENCY": "8"}):
+        with mock.patch.dict(os.environ, {"DBT_ENGINE_PARSER_CONCURRENCY": "8"}):
             with mock.patch("dbt.parser.concurrency.get_flags", side_effect=Exception("No flags")):
                 concurrency = get_parser_concurrency()
                 self.assertEqual(concurrency, 8)

@@ -45,7 +45,7 @@ def get_parser_concurrency() -> int:
             except (ValueError, TypeError):
                 pass
 
-    env_concurrency = os.environ.get("DBT_PARSER_CONCURRENCY")
+    env_concurrency = os.environ.get("DBT_ENGINE_PARSER_CONCURRENCY")
     if env_concurrency is not None:
         try:
             val = int(env_concurrency)
